@@ -1,0 +1,50 @@
+version: '3.7'
+
+services:
+  app:
+    build: ./
+    restart: always
+    container_name: app
+    command: gunicorn --bind 0.0.0.0:8000 weather.wsgi:application
+    volumes:
+      - staticfiles:/app/static/
+      - .:/app
+    expose:
+      - 8000
+    ports:
+      - 8000:8000
+    env_file:
+      - ./weather/.env
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres
+    ports:
+      - 5432:5432
+    container_name: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+
+  redis:
+    restart: always
+    image: redis:latest
+    expose:
+      - 6379
+
+  nginx:
+    build: ./configs/nginx
+    container_name: nginx
+    volumes:
+      - staticfiles:/app/static/
+    ports:
+      - 8008:80
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+  staticfiles:
